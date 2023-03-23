@@ -1,5 +1,9 @@
 # ERC721 indexer
 
+## TODO
+* store bytes not hex strings
+* contract detection
+
 
 Add **.env** file to the root directory 
 
@@ -9,6 +13,10 @@ DB_PORT=23798
 GQL_PORT=4350
 # JSON-RPC node endpoint, both wss and https endpoints are accepted
 RPC_ENDPOINT=
+```
+$## Generate types from ABI
+```bash
+sqd typegen
 ```
 
 This is squid ERC721 indexer for EVM networks (Ethereum, Polygon, BSC, etc.). See [Squid SDK docs](https://docs.subsquid.io/) for a complete reference.
