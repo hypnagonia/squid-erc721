@@ -1,7 +1,9 @@
-type Burn @entity {
-  id: ID!
-  block: Int!
-  address: String! @index
-  value: BigInt!
-  txHash: String!
+type Transfer @entity {
+  from: String!
+  to: String!
+  tokenId: BigInt!
+  contract: String!
+  transactionHash: String!
+  blockNumber: BigInt!
+  blockHash: String!
 }

@@ -1,5 +1,5 @@
-import {IABI} from './types'
-import {ByteCode, Address} from './types'
+import {IABI} from '../types'
+import {ByteCode, Address} from '../types'
 
 import Web3 from 'web3'
 
@@ -30,7 +30,13 @@ export const ABIManager = (abi: IABI) => {
       }
     })
 
-  const getEntryByName = (name: string) => entries.find((e) => e.name === name)
+  const getEntryByName = (name: string) => {
+      const res = entries.find((e) => e.name === name)
+      if (!res) {
+          throw new Error (`can't find ${name} method/event in existing ABI: ${entries.map(e => e.name).join(', ')}`)
+      }
+      return res
+  }
 
   const hasAllSignatures = (names: string[], hexData: ByteCode) =>
     names.reduce((acc, name) => {
@@ -79,7 +85,9 @@ export const ABIManager = (abi: IABI) => {
           throw new Error(`${methodName} not found`)
         }
 
-        /*const response = await RPCClient.call(0, {
+        /*
+        todo
+        const response = await RPCClient.call(0, {
           to: address,
           data: entry.signature,
         })*/

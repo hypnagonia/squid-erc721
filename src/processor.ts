@@ -2,21 +2,23 @@ import {TypeormDatabase} from '@subsquid/typeorm-store';
 import {EvmBatchProcessor} from '@subsquid/evm-processor'
 import {lookupArchive} from '@subsquid/archive-registry'
 
-import {ABIManager} from './ABIManager'
+import {ABIManager} from './utils/ABIManager'
 import ERC721ABI from './abi/ERC721ABI.json'
 import {IABI} from './types'
 
 export const ABI = ABIManager(ERC721ABI as IABI)
 
 import assert from 'assert';
-import {Burn} from './model';
+import {Transfer as ITransfer} from './model';
 
 // generated ABI is broken somehow
 // import * as ERC721ABI from './abi/ERC721ABI'
-// we also ignore safeTransferFrom event
 
-const ERC721TransferEventSignature = ABI.getEntryByName('Transfer')?.signature || ''
+// todo we ignore safeTransferFrom event
+const ERC721TransferEventSignature = ABI.getEntryByName('Transfer').signature
 
+// todo read
+// https://docs.subsquid.io/tutorials/parquet-file-store/#data-indexing
 
 const storage = new TypeormDatabase()
 const processor = new EvmBatchProcessor()
@@ -37,19 +39,18 @@ const processor = new EvmBatchProcessor()
         } as const
     })
 
-function formatID(height: any, hash: string) {
-    return `${String(height).padStart(10, '0')}-${hash}`
-}
-
 processor.run(storage, async (ctx) => {
+    const transfers: ITransfer[] = []
 
     for (let block of ctx.blocks) {
         for (let item of block.items) {
+
+            // https://docs.subsquid.io/evm-indexing/context-interfaces/#evmlog-items
             if (item.kind !== 'evmLog') continue
 
             const log = item.evmLog
 
-            console.log({item})
+            // console.log({item})
             const [topic0, ...topics] = log.topics
 
             let decodeLog
@@ -57,15 +58,28 @@ processor.run(storage, async (ctx) => {
             try {
                 decodeLog = ABI.decodeLog(ERC721TransferEventSignature, log.data, topics)
             } catch (e) {
-                // likely erc20 Transfer with same signature but not indexed value
+                // likely erc20 Transfer, topic sig is the same, but "value | tokenId" field of event params is set as NOT indexed
                 ctx.log.debug(`Failed to parse Transfer log for ${item.address}, skipping`)
+                // todo blacklist
                 continue
             }
-            console.log({decodeLog})
+
+            transfers.push(new ITransfer({
+                id: item.evmLog.id,
+                from: decodeLog.from,
+                to: decodeLog.to,
+                tokenId: BigInt(decodeLog.tokenId),
+                blockNumber: BigInt(block.header.height),
+                blockHash: block.header.hash,
+                transactionHash: item.transaction.hash,
+                contract: item.address
+            }))
+
+            // console.log({decodeLog})
 
             // const data = ctx.blocks[0].items[0].evmLog.data
             // console.log({data})
-            process.exit(0)
+            // process.exit(0)
         }
     }
 
@@ -94,5 +108,10 @@ processor.run(storage, async (ctx) => {
      await ctx.store.save(burns)
 
      */
+
+    await ctx.store.save(transfers)
+    const startBlock = ctx.blocks.at(0)?.header.height
+    const endBlock = ctx.blocks.at(-1)?.header.height
+    ctx.log.info(`Indexed from ${startBlock} to ${endBlock}`)
 });
 
