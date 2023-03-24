@@ -16,6 +16,7 @@ const filteredContracts = new LRU({max: 500 * 1000})
 
 const ABI = ABIManager(ERC721ABI as IABI)
 const ERC721TransferEventSignature = ABI.getEntryByName('Transfer').signature
+let newContractCounter = 0
 
 const ERC721Processor = new EvmBatchProcessor()
     .setDataSource({
@@ -61,7 +62,7 @@ const processERC721Contract = async (ctx, block, log) => {
             const contractFromStorage = await ctx.store.get(Contract, address)
             if (contractFromStorage) {
                 processedContracts.set(address, true)
-                resolve(true)
+                resolve(false)
                 return
             }
 
@@ -74,7 +75,7 @@ const processERC721Contract = async (ctx, block, log) => {
             // todo validate name?
             const name = 'TODO' //await ABI.call('name', [], address)
             const symbol = 'TODO' //await ABI.call('symbol', [], address)
-            l.info(`new ERC721 found: ${name} ${symbol} ${address}`)
+            // l.debug(`new ERC721 found: ${name} ${symbol} ${address}`)
 
             const c = new Contract({
                 id: address,
@@ -92,6 +93,7 @@ const processERC721Contract = async (ctx, block, log) => {
         }
 
         processedContracts.set(address, true)
+        newContractCounter++
         resolve(true)
     }).finally(() => {
         processERC721ContractJobs.delete(address)
@@ -99,7 +101,7 @@ const processERC721Contract = async (ctx, block, log) => {
 
     processERC721ContractJobs.set(address, job)
 
-    await job
+    return job
 }
 
 /*
@@ -110,6 +112,7 @@ export const run = async () => {
     l.info('starting')
     ERC721Processor.run(storage, async (ctx) => {
         const transfers: Transfer[] = []
+        newContractCounter = 0
 
         for (const block of ctx.blocks) {
             for (const item of block.items) {
@@ -161,9 +164,9 @@ export const run = async () => {
         }
 
         await ctx.store.save(transfers)
-        // const startBlock = ctx.blocks.at(0)?.header.height
-        // const endBlock = ctx.blocks.at(-1)?.header.height
-        // ctx.log.info(`ERC721 Transfers indexed from ${startBlock} to ${endBlock}`)
+        const startBlock = ctx.blocks.at(0)?.header.height
+        const endBlock = ctx.blocks.at(-1)?.header.height
+        ctx.log.info(`${newContractCounter} new ERC721, ${transfers.length} Transfer events`)
     })
 }
 

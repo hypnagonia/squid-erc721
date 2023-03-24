@@ -7,6 +7,8 @@
 * to psql or csv or ?
 * start from block of reasonable height, not 0
 
+## Run
+
 Add **.env** file to the root directory 
 
 ```bash
@@ -16,18 +18,16 @@ GQL_PORT=4350
 # JSON-RPC node endpoint, both wss and https endpoints are accepted
 RPC_ENDPOINT=
 ```
-$## Generate types from ABI
+## Generate types from ABI
 ```bash
 sqd typegen
 ```
 
-$## Generate models and migrations
+## Generate models and migrations
 ```bash
 sqd codegen
 sqd migration:generate
 ```
-
-sqd codegen
 
 This is squid ERC721 indexer for EVM networks (Ethereum, Polygon, BSC, etc.). See [Squid SDK docs](https://docs.subsquid.io/) for a complete reference.
 
