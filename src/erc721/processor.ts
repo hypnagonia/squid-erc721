@@ -4,7 +4,7 @@ import {ABIManager} from '../utils/ABIManager'
 import ERC721ABI from '../abis/ERC721ABI.json'
 import {IABI} from '../types'
 import LRU from 'lru-cache'
-import {Transfer} from '../model';
+import {Transfer, Contract} from '../model';
 import {createLogger} from '@subsquid/logger'
 import {storage} from '../storage'
 import {MULTICALL_ADDRESS} from '../utils/rpc'
@@ -35,10 +35,32 @@ const ERC721Processor = new EvmBatchProcessor()
         } as const
     })
 
+// @ts-ignore
+const processERC721Contract = async (ctx, block, log) => {
+    const {address} = log
 
-const isERC721 = async (ctx) => {
-    const multicall = new Multicall(ctx, {height: maxHeight}, MULTICALL_ADDRESS)
+    try {
+        // todo multicall
+        const name = await ABI.call('name', [], address)
+        const symbol = await ABI.call('symbol', [], address)
+        console.log({name, symbol, address})
+
+        const c = new Contract({
+            id: address,
+            name,
+            symbol
+        })
+
+        await ctx.store.save(c)
+    } catch (e) {
+        l.info('no')
+        filteredContracts.get(address)
+        return
+    }
+
+    processedContracts.set(address, true)
 }
+
 /*
 1 iterate through all Transfer events
 2 when find a new contract address, check if it is a valid erc721 and get meta
@@ -77,6 +99,17 @@ export const run = async () => {
                     continue
                 }
 
+
+                if (processedContracts.get(address)) {
+                    continue
+                }
+
+
+                await processERC721Contract(ctx, block, log)
+                if (filteredContracts.get(address)) {
+                    continue
+                }
+
                 transfers.push(new Transfer({
                     id: log.id,
                     from: decodeLog.from.toLowerCase(),
@@ -89,12 +122,6 @@ export const run = async () => {
                     timestamp: BigInt(block.header.timestamp)
                 }))
 
-                if (processedContracts.get(address)) {
-                    continue
-                }
-
-
-                await isERC721(ctx)
                 // try to load
                 // const r = await ctx.store.get(Transfer, '0000937821-000000-48b4a')
                 // console.log(r)
@@ -104,9 +131,9 @@ export const run = async () => {
         }
 
         await ctx.store.save(transfers)
-        const startBlock = ctx.blocks.at(0)?.header.height
-        const endBlock = ctx.blocks.at(-1)?.header.height
-        ctx.log.info(`ERC721 Transfers indexed from ${startBlock} to ${endBlock}`)
+        // const startBlock = ctx.blocks.at(0)?.header.height
+        // const endBlock = ctx.blocks.at(-1)?.header.height
+        // ctx.log.info(`ERC721 Transfers indexed from ${startBlock} to ${endBlock}`)
     })
 }
 
