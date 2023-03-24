@@ -55,7 +55,7 @@ type AnyFunc = Func<any, {}, any>
 type Call = [address: string, bytes: string]
 
 
-const aggregate = new Func<[calls: Call[]], {}, {blockNumber: ethers.BigNumberish, returnData: string[]}>(
+const aggregate = new Func<[calls: Call[]], {}, {blockNumber: ethers.BigNumber, returnData: string[]}>(
     abi, abi.getSighash('aggregate')
 )
 
@@ -89,13 +89,13 @@ export class Multicall extends ContractBase {
     aggregate<Args extends any[], R>(
         func: Func<Args, {}, R>,
         calls: [address: string, args: Args][],
-        paging?: number
-    ): Promise<R[]>
+    paging?: number
+): Promise<R[]>
 
     aggregate(
         calls: [func: AnyFunc, address: string, args: any[]][],
-        paging?: number
-    ): Promise<any[]>
+    paging?: number
+): Promise<any[]>
 
     async aggregate(...args: any[]): Promise<any[]> {
         let [calls, funcs, page] = this.makeCalls(args)
@@ -121,13 +121,13 @@ export class Multicall extends ContractBase {
     tryAggregate<Args extends any[], R>(
         func: Func<Args, {}, R>,
         calls: [address: string, args: Args][],
-        paging?: number
-    ): Promise<MulticallResult<R>[]>
+    paging?: number
+): Promise<MulticallResult<R>[]>
 
     tryAggregate(
         calls: [func: AnyFunc, address: string, args: any[]][],
-        paging?: number
-    ): Promise<MulticallResult<any>[]>
+    paging?: number
+): Promise<MulticallResult<any>[]>
 
     async tryAggregate(...args: any[]): Promise<any[]> {
         let [calls, funcs, page] = this.makeCalls(args)
@@ -155,48 +155,48 @@ export class Multicall extends ContractBase {
     }
 
     private makeCalls(args: any[]): [calls: Call[], funcs: AnyFunc[], page: number] {
-        let page = typeof args[args.length-1] == 'number' ? args.pop()! : Number.MAX_SAFE_INTEGER
-        switch(args.length) {
-            case 1: {
-                let list: [func: AnyFunc, address: string, args: any[]][] = args[0]
-                let calls = new Array(list.length)
-                let funcs = new Array(list.length)
-                for (let i = 0; i < list.length; i++) {
-                    let [func, address, args] = list[i]
-                    calls[i] = [address, func.encode(args)]
-                    funcs[i] = func
-                }
-                return [calls, funcs, page]
-            }
-            case 2: {
-                let func: AnyFunc = args[0]
-                let list: [address: string, args: any[]][] = args[1]
-                let calls = new Array(list.length)
-                let funcs = new Array(list.length)
-                for (let i = 0; i < list.length; i++) {
-                    let [address, args] = list[i]
-                    calls[i] = [address, func.encode(args)]
-                    funcs[i] = func
-                }
-                return [calls, funcs, page]
-            }
-            case 3: {
-                let func: AnyFunc = args[0]
-                let address: string = args[1]
-                let list: any[][] = args[2]
-                let calls = new Array(list.length)
-                let funcs = new Array(list.length)
-                for (let i = 0; i < list.length; i++) {
-                    let args = list[i]
-                    calls[i] = [address, func.encode(args)]
-                    funcs[i] = func
-                }
-                return [calls, funcs, page]
-            }
-            default:
-                throw new Error('unexpected number of arguments')
-        }
+    let page = typeof args[args.length-1] == 'number' ? args.pop()! : Number.MAX_SAFE_INTEGER
+    switch(args.length) {
+    case 1: {
+        let list: [func: AnyFunc, address: string, args: any[]][] = args[0]
+        let calls = new Array(list.length)
+        let funcs = new Array(list.length)
+        for (let i = 0; i < list.length; i++) {
+        let [func, address, args] = list[i]
+        calls[i] = [address, func.encode(args)]
+        funcs[i] = func
     }
+    return [calls, funcs, page]
+}
+case 2: {
+    let func: AnyFunc = args[0]
+    let list: [address: string, args: any[]][] = args[1]
+    let calls = new Array(list.length)
+    let funcs = new Array(list.length)
+    for (let i = 0; i < list.length; i++) {
+        let [address, args] = list[i]
+        calls[i] = [address, func.encode(args)]
+        funcs[i] = func
+    }
+    return [calls, funcs, page]
+}
+case 3: {
+    let func: AnyFunc = args[0]
+    let address: string = args[1]
+    let list: any[][] = args[2]
+    let calls = new Array(list.length)
+    let funcs = new Array(list.length)
+    for (let i = 0; i < list.length; i++) {
+        let args = list[i]
+        calls[i] = [address, func.encode(args)]
+        funcs[i] = func
+    }
+    return [calls, funcs, page]
+}
+default:
+throw new Error('unexpected number of arguments')
+}
+}
 }
 
 

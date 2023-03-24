@@ -20,6 +20,14 @@ $## Generate types from ABI
 sqd typegen
 ```
 
+$## Generate models and migrations
+```bash
+sqd codegen
+sqd migration:generate
+```
+
+sqd codegen
+
 This is squid ERC721 indexer for EVM networks (Ethereum, Polygon, BSC, etc.). See [Squid SDK docs](https://docs.subsquid.io/) for a complete reference.
 
 To extract EVM logs and transactions by a topic or a contract address, use `EvmBatchProcessor.addLog()` and `EvmBatchProcessor.addTransaction()` methods of the `EvmBatchProcessor` instance defined in `src/processor.ts`. 

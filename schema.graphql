@@ -3,7 +3,28 @@ type Transfer @entity {
   to: String!
   tokenId: BigInt!
   contract: String!
-  transactionHash: String!
-  blockNumber: BigInt!
+  transactionHash: String! @index
+  blockNumber: BigInt! @index
   blockHash: String!
+  timestamp: BigInt! @index
 }
+
+type Contract @entity {
+  id: ID! # address
+  name: String! @index
+  symbol: String! @index
+}
+
+type Holder @entity {
+  id: ID! # address
+  # balance
+}
+
+
+# todo
+# buying price, (try to find erc20/native tokens transfer events in the nft transfer transaction)
+# balances
+# token meta
+
+# based on example
+# https://github.com/subsquid-labs/subsquid-ethereum-tutorial-example/blob/main/schema.graphql
