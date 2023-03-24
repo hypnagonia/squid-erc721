@@ -16,6 +16,9 @@ const filteredContracts = new LRU({max: 500 * 1000})
 
 const ABI = ABIManager(ERC721ABI as IABI)
 const ERC721TransferEventSignature = ABI.getEntryByName('Transfer').signature
+
+const startFromBlock = +process.env.ERC721_FROM_BLOCK || 8099649
+
 let newContractCounter = 0
 
 const ERC721Processor = new EvmBatchProcessor()
@@ -24,7 +27,7 @@ const ERC721Processor = new EvmBatchProcessor()
         // https://docs.subsquid.io/evm-indexing/supported-networks/
         archive: lookupArchive('eth-mainnet')
     })
-    .setBlockRange({from: 8099649})
+    .setBlockRange({from: startFromBlock})
     .addLog([], {
         filter: [
             // topic0: 'Transfer(address,address,uint256)'
@@ -50,11 +53,8 @@ const processERC721Contract = async (ctx, block, log) => {
 
     const alreadyProcessing = processERC721ContractJobs.get(address)
     if (alreadyProcessing) {
-        // l.info('already map' + processERC721ContractJobs.size)
         return alreadyProcessing
     }
-
-    // l.info('new map ' + processERC721ContractJobs.size)
 
     const job = new Promise(async (resolve, reject) => {
         try {
