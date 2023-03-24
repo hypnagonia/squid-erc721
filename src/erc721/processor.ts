@@ -4,7 +4,7 @@ import {ABIManager} from '../utils/ABIManager'
 import ERC721ABI from '../abis/ERC721ABI.json'
 import {IABI} from '../types'
 import LRU from 'lru-cache'
-import {Transfer, Contract} from '../model';
+import {Transfer, Contract, Holder} from '../model';
 import {createLogger} from '@subsquid/logger'
 import {storage} from '../storage'
 import {expectedMethodsAndEvents} from './erc721'
@@ -24,7 +24,7 @@ const ERC721Processor = new EvmBatchProcessor()
         // https://docs.subsquid.io/evm-indexing/supported-networks/
         archive: lookupArchive('eth-mainnet')
     })
-    .setBlockRange({from: 5099649})
+    .setBlockRange({from: 8099649})
     .addLog([], {
         filter: [
             // topic0: 'Transfer(address,address,uint256)'
@@ -58,7 +58,6 @@ const processERC721Contract = async (ctx, block, log) => {
 
     const job = new Promise(async (resolve, reject) => {
         try {
-            // check if already in storage but not in memory
             const contractFromStorage = await ctx.store.get(Contract, address)
             if (contractFromStorage) {
                 processedContracts.set(address, true)
@@ -72,7 +71,7 @@ const processERC721Contract = async (ctx, block, log) => {
             }
 
             // todo multicall
-            // todo validate name?
+            // todo validate fields?
             const name = 'TODO' //await ABI.call('name', [], address)
             const symbol = 'TODO' //await ABI.call('symbol', [], address)
             // l.debug(`new ERC721 found: ${name} ${symbol} ${address}`)
@@ -104,14 +103,12 @@ const processERC721Contract = async (ctx, block, log) => {
     return job
 }
 
-/*
-1 iterate through all Transfer events
-2 when find a new contract address, check if it is a valid erc721 and get meta
-*/
 export const run = async () => {
     l.info('starting')
     ERC721Processor.run(storage, async (ctx) => {
         const transfers: Transfer[] = []
+        const holdersMap = new Map()
+
         newContractCounter = 0
 
         for (const block of ctx.blocks) {
@@ -149,10 +146,13 @@ export const run = async () => {
                     continue
                 }
 
+                const from = decodeLog.from.toLowerCase()
+                const to = decodeLog.from.toLowerCase()
+
                 transfers.push(new Transfer({
                     id: log.id,
-                    from: decodeLog.from.toLowerCase(),
-                    to: decodeLog.to.toLowerCase(),
+                    from,
+                    to,
                     tokenId: BigInt(decodeLog.tokenId),
                     blockNumber: BigInt(block.header.height),
                     blockHash: block.header.hash,
@@ -160,13 +160,23 @@ export const run = async () => {
                     contract: address.toLowerCase(),
                     timestamp: BigInt(block.header.timestamp)
                 }))
+
+                holdersMap.set(from, address)
+                holdersMap.set(to, address)
             }
         }
 
+        const holders: Holder[] = []
+        holdersMap.forEach((contract, holder) => {
+            holders.push(new Holder({
+                id: holder,
+                contract
+            }))
+        })
+
         await ctx.store.save(transfers)
-        const startBlock = ctx.blocks.at(0)?.header.height
-        const endBlock = ctx.blocks.at(-1)?.header.height
-        ctx.log.info(`${newContractCounter} new ERC721, ${transfers.length} Transfer events`)
+        await ctx.store.save(holders)
+        ctx.log.info(`${newContractCounter} new ERC721, ${transfers.length} transfer events, ${holders.length} holder entries`)
     })
 }
 

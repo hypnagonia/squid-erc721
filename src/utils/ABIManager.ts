@@ -62,17 +62,6 @@ export const ABIManager = (abi: IABI) => {
         const contract = new web3.eth.Contract(abi as any, address)
         const res = await contract.methods[methodName]().call()
         return res
-
-        // const entry = getEntryByName(methodName)
-
-        // if (!entry || entry.type !== 'function') {
-        //            throw new Error(`${methodName} not found`)
-        // }
-        // const inputs = web3.eth.abi.encodeParameters(entry.inputs || [], params)
-
-        // const response = ''
-
-        // return web3.eth.abi.decodeParameters(entry.outputs, response)['0']
     }
 
     const getByteCode = (address: string) => {
