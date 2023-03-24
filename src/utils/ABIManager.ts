@@ -75,12 +75,18 @@ export const ABIManager = (abi: IABI) => {
         // return web3.eth.abi.decodeParameters(entry.outputs, response)['0']
     }
 
+    const getByteCode = (address: string) => {
+        // web3.eth.getCode(addressHexString [, defaultBlock] [, callback])
+        return web3.eth.getCode(address)
+    }
+
 
     return {
         abi: entries,
         getEntryByName,
         hasAllSignatures,
         call,
-        decodeLog
+        decodeLog,
+        getByteCode
     }
 }

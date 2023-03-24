@@ -7,7 +7,7 @@ import LRU from 'lru-cache'
 import {Transfer, Contract} from '../model';
 import {createLogger} from '@subsquid/logger'
 import {storage} from '../storage'
-import {MULTICALL_ADDRESS} from '../utils/rpc'
+import {expectedMethodsAndEvents} from './erc721'
 
 const l = createLogger('ERC721:processor')
 
@@ -22,7 +22,9 @@ const ERC721Processor = new EvmBatchProcessor()
         // squid public archives
         // https://docs.subsquid.io/evm-indexing/supported-networks/
         archive: lookupArchive('eth-mainnet')
-    }).addLog([], {
+    })
+    .setBlockRange({from: 5099649})
+    .addLog([], {
         filter: [
             // topic0: 'Transfer(address,address,uint256)'
             [ERC721TransferEventSignature],
@@ -35,30 +37,69 @@ const ERC721Processor = new EvmBatchProcessor()
         } as const
     })
 
+
+const processERC721ContractJobs = new Map()
+
 // @ts-ignore
 const processERC721Contract = async (ctx, block, log) => {
     const {address} = log
-
-    try {
-        // todo multicall
-        const name = await ABI.call('name', [], address)
-        const symbol = await ABI.call('symbol', [], address)
-        console.log({name, symbol, address})
-
-        const c = new Contract({
-            id: address,
-            name,
-            symbol
-        })
-
-        await ctx.store.save(c)
-    } catch (e) {
-        l.info('no')
-        filteredContracts.get(address)
+    if (processedContracts.get(address)) {
         return
     }
 
-    processedContracts.set(address, true)
+    const alreadyProcessing = processERC721ContractJobs.get(address)
+    if (alreadyProcessing) {
+        // l.info('already map' + processERC721ContractJobs.size)
+        return alreadyProcessing
+    }
+
+    // l.info('new map ' + processERC721ContractJobs.size)
+
+    const job = new Promise(async (resolve, reject) => {
+        try {
+            // check if already in storage but not in memory
+            const contractFromStorage = await ctx.store.get(Contract, address)
+            if (contractFromStorage) {
+                processedContracts.set(address, true)
+                resolve(true)
+                return
+            }
+
+            const byteCode = await ABI.getByteCode(address)
+            if (!ABI.hasAllSignatures(expectedMethodsAndEvents, byteCode)) {
+                throw new Error('ERC721 not implemented')
+            }
+
+            // todo multicall
+            // todo validate name?
+            const name = 'TODO' //await ABI.call('name', [], address)
+            const symbol = 'TODO' //await ABI.call('symbol', [], address)
+            l.info(`new ERC721 found: ${name} ${symbol} ${address}`)
+
+            const c = new Contract({
+                id: address,
+                name,
+                symbol
+            })
+
+            await ctx.store.save(c)
+        } catch (e) {
+            // likely not implemented ERC721
+            // could also be an RPC network error. todo
+            filteredContracts.set(address, true)
+            resolve(false)
+            return
+        }
+
+        processedContracts.set(address, true)
+        resolve(true)
+    }).finally(() => {
+        processERC721ContractJobs.delete(address)
+    })
+
+    processERC721ContractJobs.set(address, job)
+
+    await job
 }
 
 /*
@@ -99,13 +140,8 @@ export const run = async () => {
                     continue
                 }
 
-
-                if (processedContracts.get(address)) {
-                    continue
-                }
-
-
                 await processERC721Contract(ctx, block, log)
+
                 if (filteredContracts.get(address)) {
                     continue
                 }
@@ -121,12 +157,6 @@ export const run = async () => {
                     contract: address.toLowerCase(),
                     timestamp: BigInt(block.header.timestamp)
                 }))
-
-                // try to load
-                // const r = await ctx.store.get(Transfer, '0000937821-000000-48b4a')
-                // console.log(r)
-
-                processedContracts.set(address, true)
             }
         }
 

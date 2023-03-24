@@ -5,6 +5,7 @@
 * contract detection
 * processedList
 * to psql or csv or ?
+* start from block of reasonable height, not 0
 
 Add **.env** file to the root directory 
 
