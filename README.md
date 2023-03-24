@@ -3,7 +3,8 @@
 ## TODO
 * store bytes not hex strings
 * contract detection
-
+* processedList
+* to psql or csv or ?
 
 Add **.env** file to the root directory 
 
@@ -107,7 +108,7 @@ Squid tools assume a certain [project layout](https://docs.subsquid.io/basics/sq
 
 * All compiled js files must reside in `lib` and all TypeScript sources in `src`.
 The layout of `lib` must reflect `src`.
-* All TypeORM classes must be exported by `src/model/index.ts` (`lib/model` module).
+* All TypeORM classes must be exported by `src/model/LRUcache.ts` (`lib/model` module).
 * Database schema must be defined in `schema.graphql`.
 * Database migrations must reside in `db/migrations` and must be plain js files.
 * `sqd(1)` and `squid-*(1)` executables consult `.env` file for environment variables.
