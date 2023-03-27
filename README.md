@@ -13,7 +13,10 @@ Add **.env** file to the root directory
 
 ```bash
 DB_NAME=squid
+DB_HOST=
 DB_PORT=23798
+DB_USER=
+DB_PASS=
 GQL_PORT=4350
 # JSON-RPC node endpoint, both wss and https endpoints are accepted
 RPC_ENDPOINT=

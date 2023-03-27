@@ -1,23 +1,23 @@
-import {EvmBatchProcessor} from '@subsquid/evm-processor'
-import {lookupArchive} from '@subsquid/archive-registry'
-import {ABIManager} from '../utils/ABIManager'
+import { EvmBatchProcessor } from '@subsquid/evm-processor'
+import { lookupArchive } from '@subsquid/archive-registry'
+import { ABIManager } from '../utils/ABIManager'
 import ERC721ABI from '../abis/ERC721ABI.json'
-import {IABI} from '../types'
+import { IABI } from '../types'
 import LRU from 'lru-cache'
-import {Transfer, Contract, Holder} from '../model';
-import {createLogger} from '@subsquid/logger'
-import {storage} from '../storage'
-import {expectedMethodsAndEvents} from './erc721'
+import { Transfer, Contract, Holder } from '../model';
+import { createLogger } from '@subsquid/logger'
+import { storage } from '../storage'
+import { expectedMethodsAndEvents } from './erc721'
 
 const l = createLogger('ERC721:processor')
 
-const processedContracts = new LRU({max: 500 * 1000})
-const filteredContracts = new LRU({max: 500 * 1000})
+const processedContracts = new LRU({ max: 500 * 1000 })
+const filteredContracts = new LRU({ max: 500 * 1000 })
 
 const ABI = ABIManager(ERC721ABI as IABI)
 const ERC721TransferEventSignature = ABI.getEntryByName('Transfer').signature
 
-const startFromBlock = +process.env.ERC721_FROM_BLOCK || 8099649
+const startFromBlock = +(process.env.ERC721_FROM_BLOCK || 0) || 0
 
 let newContractCounter = 0
 
@@ -27,7 +27,7 @@ const ERC721Processor = new EvmBatchProcessor()
         // https://docs.subsquid.io/evm-indexing/supported-networks/
         archive: lookupArchive('eth-mainnet')
     })
-    .setBlockRange({from: startFromBlock})
+    .setBlockRange({ from: startFromBlock })
     .addLog([], {
         filter: [
             // topic0: 'Transfer(address,address,uint256)'
@@ -36,8 +36,8 @@ const ERC721Processor = new EvmBatchProcessor()
             []
         ],
         data: {
-            evmLog: {id: true, data: true, topics: true},
-            transaction: {hash: true}
+            evmLog: { id: true, data: true, topics: true },
+            transaction: { hash: true }
         } as const
     })
 
@@ -46,7 +46,7 @@ const processERC721ContractJobs = new Map()
 
 // @ts-ignore
 const processERC721Contract = async (ctx, block, log) => {
-    const {address} = log
+    const { address } = log
     if (processedContracts.get(address)) {
         return
     }
@@ -176,7 +176,11 @@ export const run = async () => {
 
         await ctx.store.save(transfers)
         await ctx.store.save(holders)
-        ctx.log.info(`${newContractCounter} new ERC721, ${transfers.length} transfer events, ${holders.length} holder entries`)
+
+        const startBlock = ctx.blocks.at(0)?.header.height || 0
+        const endBlock = ctx.blocks.at(-1)?.header.height || 0
+        const blocksCount = endBlock - startBlock
+        ctx.log.info(`${newContractCounter} new ERC721, ${transfers.length} transfer events, ${holders.length} holder entries, ${blocksCount} blocks`)
     })
 }
 
