@@ -123,7 +123,7 @@ export const run = async () => {
                 // https://docs.subsquid.io/evm-indexing/context-interfaces/#evmlog-items
                 if (item.kind !== 'evmLog') continue
 
-                const address = item.address
+                const address = item.address.toLowerCase()
 
                 if (filteredContracts.get(address)) {
                     continue
@@ -163,7 +163,7 @@ export const run = async () => {
                     blockNumber: BigInt(block.header.height),
                     blockHash: block.header.hash,
                     transactionHash: item.transaction.hash,
-                    contract: address.toLowerCase(),
+                    contract: address,
                     timestamp: BigInt(block.header.timestamp)
                 }))
 
