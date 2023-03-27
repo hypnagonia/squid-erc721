@@ -1,5 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
-import {Contract} from "./contract.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, Index as Index_} from "typeorm"
 
 @Entity_()
 export class Holder {
@@ -11,6 +10,6 @@ export class Holder {
     id!: string
 
     @Index_()
-    @ManyToOne_(() => Contract, {nullable: true})
-    contract!: Contract
+    @Column_("text", {nullable: false})
+    contract!: string
 }

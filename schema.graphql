@@ -11,14 +11,15 @@ type Transfer @entity {
 
 type Contract @entity {
   id: ID! # address
-  name: String! @index
-  symbol: String! @index
+  #name: String! @index
+  #symbol: String! @index
   #tokenURI
 }
 
 type Holder @entity {
   id: ID! @index # address
-  contract: Contract! @index
+  contract: String! @index 
+  #contract: Contract! @index
   # balance
 }
 

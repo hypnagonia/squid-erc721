@@ -57,15 +57,20 @@ const processERC721Contract = async (ctx, block, log) => {
     }
 
     const job = new Promise(async (resolve, reject) => {
+
         try {
             const contractFromStorage = await ctx.store.get(Contract, address)
-            if (contractFromStorage) {
-                processedContracts.set(address, true)
-                resolve(false)
-                return
-            }
+
+            try {
+                if (contractFromStorage) {
+                    processedContracts.set(address, true)
+                    resolve(false)
+                    return
+                }
+            } catch (e) { }
 
             const byteCode = await ABI.getByteCode(address)
+
             if (!ABI.hasAllSignatures(expectedMethodsAndEvents, byteCode)) {
                 throw new Error('ERC721 not implemented')
             }
@@ -78,8 +83,8 @@ const processERC721Contract = async (ctx, block, log) => {
 
             const c = new Contract({
                 id: address,
-                name,
-                symbol
+                // name,
+                // symbol
             })
 
             await ctx.store.save(c)
@@ -87,6 +92,7 @@ const processERC721Contract = async (ctx, block, log) => {
             // likely not implemented ERC721
             // could also be an RPC network error. todo
             filteredContracts.set(address, true)
+            e && l.debug('Error', JSON.stringify(e))
             resolve(false)
             return
         }

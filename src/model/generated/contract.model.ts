@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, Index as Index_} from "typeorm"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_} from "typeorm"
 
 @Entity_()
 export class Contract {
@@ -8,12 +8,4 @@ export class Contract {
 
     @PrimaryColumn_()
     id!: string
-
-    @Index_()
-    @Column_("text", {nullable: false})
-    name!: string
-
-    @Index_()
-    @Column_("text", {nullable: false})
-    symbol!: string
 }
