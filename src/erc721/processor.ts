@@ -92,7 +92,7 @@ const processERC721Contract = async (ctx, block, log) => {
             // likely not implemented ERC721
             // could also be an RPC network error. todo
             filteredContracts.set(address, true)
-            e && l.debug('Error', JSON.stringify(e))
+            e && l.debug('Error ' + JSON.stringify(e))
             resolve(false)
             return
         }
