@@ -9,6 +9,8 @@ import { createLogger } from '@subsquid/logger'
 import { storage } from '../storage'
 import { expectedMethodsAndEvents } from './erc721'
 
+import { processTransfers, processHolders, processContracts } from '../storage/parquet'
+
 const l = createLogger('ERC721:processor')
 
 const processedContracts = new LRU({ max: 500 * 1000 })
@@ -37,7 +39,7 @@ const ERC721Processor = new EvmBatchProcessor()
         ],
         data: {
             evmLog: { id: true, data: true, topics: true },
-            transaction: { hash: true }
+            transaction: { hash: true, value: true }
         } as const
     })
 
@@ -59,20 +61,21 @@ const processERC721Contract = async (ctx, block, log) => {
     const job = new Promise(async (resolve, reject) => {
 
         try {
-            const contractFromStorage = await ctx.store.get(Contract, address)
+            const contractFromStorage = '' // await ctx.store.get(Contract, address)
 
-            try {
-                if (contractFromStorage) {
-                    processedContracts.set(address, true)
-                    resolve(false)
-                    return
-                }
-            } catch (e) { }
+            if (contractFromStorage) {
+                processedContracts.set(address, true)
+                resolve(false)
+                return
+            }
 
             const byteCode = await ABI.getByteCode(address)
 
             if (!ABI.hasAllSignatures(expectedMethodsAndEvents, byteCode)) {
-                throw new Error('ERC721 not implemented')
+                // erc721 is not implemented
+                filteredContracts.set(address, true)
+                resolve(false)
+                return
             }
 
             // todo multicall
@@ -87,12 +90,14 @@ const processERC721Contract = async (ctx, block, log) => {
                 // symbol
             })
 
-            await ctx.store.save(c)
+            await processContracts(ctx, [c])
+            // await ctx.store.save(c)
         } catch (e) {
             // likely not implemented ERC721
             // could also be an RPC network error. todo
             filteredContracts.set(address, true)
-            e && l.debug('Error ' + JSON.stringify(e))
+            console.log(e)
+            l.error('Error ' + JSON.stringify(e))
             resolve(false)
             return
         }
@@ -164,7 +169,8 @@ export const run = async () => {
                     blockHash: block.header.hash,
                     transactionHash: item.transaction.hash,
                     contract: address,
-                    timestamp: BigInt(block.header.timestamp)
+                    timestamp: BigInt(block.header.timestamp),
+                    sentETHValue: item.transaction.value
                 }))
 
                 holdersMap.set(from, address)
@@ -180,8 +186,11 @@ export const run = async () => {
             }))
         })
 
-        await ctx.store.save(transfers)
-        await ctx.store.save(holders)
+        // todo to db index
+        await processHolders(ctx, holders)
+        await processTransfers(ctx, transfers)
+        //await ctx.store.save(transfers)
+        //await ctx.store.save(holders)
 
         const startBlock = ctx.blocks.at(0)?.header.height || 0
         const endBlock = ctx.blocks.at(-1)?.header.height || 0

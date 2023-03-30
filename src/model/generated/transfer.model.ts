@@ -10,15 +10,18 @@ export class Transfer {
     @PrimaryColumn_()
     id!: string
 
+    @Index_()
     @Column_("text", {nullable: false})
     from!: string
 
+    @Index_()
     @Column_("text", {nullable: false})
     to!: string
 
     @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
     tokenId!: bigint
 
+    @Index_()
     @Column_("text", {nullable: false})
     contract!: string
 
@@ -36,4 +39,7 @@ export class Transfer {
     @Index_()
     @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
     timestamp!: bigint
+
+    @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
+    sentETHValue!: bigint
 }

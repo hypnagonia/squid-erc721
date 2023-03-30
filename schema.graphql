@@ -1,16 +1,17 @@
 type Transfer @entity {
-  from: String!
-  to: String!
+  from: String! @index
+  to: String! @index
   tokenId: BigInt!
-  contract: String!
+  contract: String! @index
   transactionHash: String! @index
   blockNumber: BigInt! @index
   blockHash: String!
   timestamp: BigInt! @index
+  sentETHValue: BigInt!
 }
 
 type Contract @entity {
-  id: ID! # address
+  id: ID! @index # address
   #name: String! @index
   #symbol: String! @index
   #tokenURI
