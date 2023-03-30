@@ -11,10 +11,10 @@ import {BatchHandlerContext, assertNotNull} from '@subsquid/evm-processor'
 const compression = 'UNCOMPRESSED'
 
 export const HolderT = new Table(
-    'holders.parquet',
+    'holder.parquet',
     {
         id: Column(Types.String()),
-        contract: Column(Types.Timestamp()),
+        contract: Column(Types.String()),
     },
     {
         compression
@@ -22,7 +22,7 @@ export const HolderT = new Table(
 )
 
 export const ContractT = new Table(
-    'holders.parquet',
+    'contract.parquet',
     {
         id: Column(Types.String()),
     },
@@ -32,15 +32,15 @@ export const ContractT = new Table(
 )
 
 export const TransferT = new Table(
-    'holders.parquet',
+    'transfer.parquet',
     {
-        blockNumber: Column(Types.Uint32()),
+        blockNumber: Column(Types.String()),
         timestamp: Column(Types.Timestamp()),
         from: Column(Types.String()),
         to: Column(Types.String()),
         contract: Column(Types.String()),
-        tokenId: Column(Types.Uint64()),
-        sendETHValue: Column(Types.Uint64()),
+        tokenId: Column(Types.String()),
+        sentETHValue: Column(Types.String()),
         transactionHash: Column(Types.String()),
         blockHash: Column(Types.String()),
     },
@@ -68,10 +68,13 @@ export const processTransfers = async (ctx: BatchHandlerContext<any, any>, arr: 
 
         const prepared = {
             ...t,
-            timestamp: new Date(t.timestamp.toString()),
-            sentETHValue: assertNotNull(t.sentETHValue)
-
+            timestamp: t.timestamp,
+            blockNumber: t.toString(),
+            tokenId: t.tokenId.toString(),
+            sentETHValue: t.sentETHValue.toString()
         }
+        console.log(prepared)
+
         ctx.store.TransferT.write(prepared)
     }
 }

@@ -121,6 +121,7 @@ export const run = async () => {
         const holdersMap = new Map()
 
         newContractCounter = 0
+        // ctx.blocks.length = 11
 
         for (const block of ctx.blocks) {
             for (const item of block.items) {
@@ -164,12 +165,14 @@ export const run = async () => {
                     id: log.id,
                     from,
                     to,
-                    tokenId: BigInt(decodeLog.tokenId),
+                    // @ts-ignore
+                    tokenId: decodeLog.tokenId,
                     blockNumber: BigInt(block.header.height),
                     blockHash: block.header.hash,
                     transactionHash: item.transaction.hash,
                     contract: address,
                     timestamp: BigInt(block.header.timestamp),
+                    // set to string
                     sentETHValue: item.transaction.value
                 }))
 
