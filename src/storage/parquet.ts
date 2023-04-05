@@ -31,6 +31,7 @@ export const ContractT = new Table(
     }
 )
 
+// todo?
 export const TransferT = new Table(
     'transfer.parquet',
     {
@@ -62,19 +63,15 @@ const dbOptions = {
 	syncIntervalBlocks: 10
 }
 
-// todo async?
+// todo async? batches?
 export const processTransfers = async (ctx: BatchHandlerContext<any, any>, arr: Transfer[]) => {
     for (const t of arr) {
-
         const prepared = {
             ...t,
             timestamp: t.timestamp,
-            blockNumber: t.toString(),
             tokenId: t.tokenId.toString(),
             sentETHValue: t.sentETHValue.toString()
         }
-        console.log(prepared)
-
         ctx.store.TransferT.write(prepared)
     }
 }

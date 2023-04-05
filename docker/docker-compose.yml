@@ -1,0 +1,18 @@
+version: '3'
+services:
+  app-db:
+    image: "healthcheck/postgres"
+    env_file: ./config/postgres_app.env
+    volumes:
+      - "../db/app:/var/lib/postgresql/data"
+    restart: always
+  app:
+    build: ../
+    depends_on:
+      - app-db
+    links:
+      - app-db
+    env_file:
+        - ./config/postgres_app.env
+        - ./config/app.env
+    restart: always

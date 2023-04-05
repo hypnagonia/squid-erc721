@@ -8,7 +8,7 @@ import { Transfer, Contract, Holder } from '../model';
 import { createLogger } from '@subsquid/logger'
 import { storage } from '../storage'
 import { expectedMethodsAndEvents } from './erc721'
-
+import { withRetry } from '../utils'
 import { processTransfers, processHolders, processContracts } from '../storage/parquet'
 
 const l = createLogger('ERC721:processor')
@@ -22,6 +22,7 @@ const ERC721TransferEventSignature = ABI.getEntryByName('Transfer').signature
 const startFromBlock = +(process.env.ERC721_FROM_BLOCK || 0) || 0
 
 let newContractCounter = 0
+
 
 const ERC721Processor = new EvmBatchProcessor()
     .setDataSource({
@@ -69,7 +70,8 @@ const processERC721Contract = async (ctx, block, log) => {
                 return
             }
 
-            const byteCode = await ABI.getByteCode(address)
+            // todo retries
+            const byteCode = await withRetry(() => ABI.getByteCode(address))
 
             if (!ABI.hasAllSignatures(expectedMethodsAndEvents, byteCode)) {
                 // erc721 is not implemented
